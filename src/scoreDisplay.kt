@@ -24,17 +24,17 @@ object ScoreDisplay { // Controla o mostrador de pontuação.
     // Animação para quando o Score Display não estã a ser usado
     fun animation(){
         setScore(111111, false)
-        Thread.sleep(500)
+        Thread.sleep(300)
         setScore(0xEEEEE, true)
-        Thread.sleep(500)
+        Thread.sleep(300)
         setScore(0xDDDDDD, true)
-        Thread.sleep(500)
+        Thread.sleep(300)
         setScore(0xCCCCCC, true)
-        Thread.sleep(500)
+        Thread.sleep(300)
         setScore(0xBBBBBB, true)
-        Thread.sleep(500)
+        Thread.sleep(300)
         setScore(0xAAAAAA, true)
-        Thread.sleep(500)
+        Thread.sleep(300)
     }
 
     // Envia comando para atualizar o valor do mostrador de pontuação

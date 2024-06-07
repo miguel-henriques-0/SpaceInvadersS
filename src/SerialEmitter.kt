@@ -4,6 +4,7 @@ object SerialEmitter { // Envia tramas para os diferentes módulos Serial Receiv
     private const val LCDSELMASK = 0x01
     private const val SCORESELMASK = 0x02
     private const val SCLKMASK = 0x10
+    // private const val SCLKMASK = 0x04
     private const val SDXMASK = 0x08
 
     // Inicia a classe
