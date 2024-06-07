@@ -3,6 +3,7 @@ import isel.leic.utils.Time
 object app{
     // Variáveis de jogo
     private var GAMERUN: Boolean = false
+    private var INSERTINGNAME = false
     private var SCORE: Int = 0; private const val POINTSPERKILL = 2
     private var COINS = 0
     private var NJOGOS = 0
@@ -57,6 +58,7 @@ object app{
     }
 
     fun initScreen(){
+        TUI.clearScreen()
         val initTime = System.currentTimeMillis()
         TUI.writeCorners("Space Invaders", top = true, left = true)
         TUI.writeCorners("Credits: $COINS$", top = false, left = false)
@@ -131,26 +133,35 @@ object app{
             }
             '#' -> {
                 USERNAME += LETTER
-                TUI.positionCursor(1, NAMESCREENSTRING.length + USERNAME.length + 2)
+                TUI.positionCursor(1, NAMESCREENSTRING.length + USERNAME.length + 1)
                 LETTER = 'A'
                 TUI.writeChar(LETTER)
+                TUI.positionCursor(1, NAMESCREENSTRING.length + USERNAME.length + 1)
+            }
+            '*' -> {
+                INSERTINGNAME = false
             }
 
             else -> return
         }
 
-        print(USERNAME)
+        if(USERNAME.length == 8){
+            INSERTINGNAME = false
+        }
 
     }
 
     fun getUserName(){
+        INSERTINGNAME = true
         TUI.writeCorners("             ", top = true, left = true)
         TUI.writeCorners(NAMESCREENSTRING, top = true, left = true)
         TUI.writeChar(LETTER)
         TUI.positionCursor(1, NAMESCREENSTRING.length + USERNAME.length + 1)
-        while(true){
+        while(INSERTINGNAME){
             handleNameInputs()
         }
+
+        app.initScreen()
     }
 
     fun gameOverScreen(){
