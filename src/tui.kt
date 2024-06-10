@@ -10,6 +10,23 @@ object TUI{
         LCD.clear()
     }
 
+    fun cursorOutOfScreen(){
+        positionCursor(1, 30)
+    }
+
+    fun clearLine(line: Int){
+        when(line){
+            1 -> {
+                LCD.cursor(1,1)
+            }
+            2 -> {
+                LCD.cursor(2,1)
+            }
+            else -> return
+        }
+        LCD.write("                ")
+    }
+
     fun writeChar(char: Char){
         LCD.write(char)
     }

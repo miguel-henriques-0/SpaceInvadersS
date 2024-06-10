@@ -4,39 +4,72 @@ object app{
     // Variáveis de jogo
     private var GAMERUN: Boolean = false
     private var INSERTINGNAME = false
-    private var SCORE: Int = 0; private const val POINTSPERKILL = 2
-    private var COINS = 0
-    private var NJOGOS = 0
+    private var SCORE: Int = 0
+    private var SCORELIST = ArrayList<Scores.Score>()
+    private const val POINTSPERKILL = 2
+    private var PREVCOINS = 0
+    private var CREDITS = 0
+    private var NGAMES = 0
 
     // Variáveis de mira
-    private var AIMPOS = 1; private var AIMVALUE: Char? = null
+    private var AIMPOS = 1
+    private var AIMVALUE: Char? = null
+    private const val AIMSTRING = "[ "
 
     // Variáveis de inimigos
-    private const val SPAWNTIME = 100
-    private var TOPINVADERS = ""; private var BOTTOMIMVADERS = ""
+    private var SPAWNTIME = 0
+    private const val DEFAULTSPAWNTIME = 1000
+    private var TOPINVADERS = ""
+    private var BOTTOMIMVADERS = ""
 
     // Constantes de tempo
-    private var STARTKEYWAITTIME: Long = 100
-    private var GAMEKEYWAITTIME: Long = 100
-    private var ANIMATIONTIME = 1500
+    private const val STARTKEYWAITTIME: Long = 100
+    private const val GAMEKEYWAITTIME: Long = 100
+    private const val ANIMATIONTIME = 500
+    private const val IDLETIMER = 10000
+    private const val PODIUMTIME = 4000
+    private const val CHECKCOINTIME = 100
 
-
+    // Variáveis e constantes da introdução do username
     private const val NAMESCREENSTRING = "Nome: "
     private var LETTER = 'A'
     private var USERNAME = ""
 
+    // Variáveis manutenção
+    private var TEST = false
+    private var INM = false
+    private const val MAITENANCEINPUTTIME: Long = 200
+
+    // Variáveis ecrã principal
+    private const val GAMETITLE = "Space Invaders"
+    private var CREDITSSTRING = "Creditos "
+    private var IDLE = false
+
 
     fun init(){
-        TOPINVADERS = ""; BOTTOMIMVADERS = ""
-        SCORE = 0; GAMERUN = false
-        AIMPOS = 1; AIMVALUE = null;
-        COINS = Statistics.readCoins()
-        NJOGOS = Statistics.readNumberOfGames()
-
+        Scores.init()
         TUI.init()
         ScoreDisplay.init()
         CoinAcceptor.init()
+
+        PREVCOINS = Statistics.readCoins()
+        NGAMES = Statistics.readNumberOfGames()
+        CREDITS = 0
+        SCORELIST = Scores.getScores()
+
+        resetGameState()
+    }
+
+    fun resetGameState(){
+        TOPINVADERS = ""
+        BOTTOMIMVADERS = ""
+        SCORE = 0
+        AIMPOS = 1
+        AIMVALUE = null
+        SPAWNTIME = DEFAULTSPAWNTIME
         TUI.clearScreen()
+        TUI.writeCorners(GAMETITLE, top = true, left = true)
+        TUI.writeCorners("$CREDITSSTRING$CREDITS$", top = false, left = false)
         initScreen()
     }
 
@@ -45,47 +78,71 @@ object app{
         ScoreDisplay.setScore(SCORE, false)
     }
 
-    fun waitGameStart(): Boolean{
-        val key = TUI.waitSpecificKey('#', STARTKEYWAITTIME)
+    fun waitGameStart(): Boolean = TUI.waitSpecificKey('#', STARTKEYWAITTIME)
 
-        if(key){
-            prepGameScreen()
-            return true
-        }
-
-        return false
-
-    }
 
     fun initScreen(){
-        TUI.clearScreen()
-        val initTime = System.currentTimeMillis()
-        TUI.writeCorners("Space Invaders", top = true, left = true)
-        TUI.writeCorners("Credits: $COINS$", top = false, left = false)
+
+        var animationTime = System.currentTimeMillis()
+        var idleTime = System.currentTimeMillis()
+        var scoreTimer = System.currentTimeMillis()
+        var scoreIndex = 0
+
         while(true){
-            if(waitGameStart()){
+            if(waitGameStart() && CREDITS >= 2){
                 prepGameScreen()
                 break
             }
-            if(CoinAcceptor.checkCoin()){
-                COINS += 2
-                TUI.writeCorners("$COINS$", top = false, left = false)
+            if(CoinAcceptor.checkCoin() && System.currentTimeMillis() - idleTime > CHECKCOINTIME){
+                IDLE = false
+                idleTime = System.currentTimeMillis()
+                CREDITS += 2
+                TUI.clearLine(2)
+                TUI.writeCorners("$CREDITSSTRING$CREDITS$", top = false, left = false)
             }
-            if(System.currentTimeMillis() - initTime > ANIMATIONTIME)
-                ScoreDisplay.animation()
+            if(System.currentTimeMillis() - idleTime > IDLETIMER){
+                IDLE = true
+            }
+            if(IDLE && System.currentTimeMillis() - scoreTimer > PODIUMTIME && SCORELIST.isNotEmpty()){
+
+                TUI.clearLine(2)
+
+                val score = SCORELIST[scoreIndex]
+
+                TUI.writeCorners("${scoreIndex+1}. ${score.name} ${score.points}", top = false, left = true)
+                TUI.cursorOutOfScreen()
+
+                scoreIndex++
+                if(scoreIndex > SCORELIST.size-1){
+                    scoreIndex = 0
+                }
+
+                scoreTimer = System.currentTimeMillis()
+
+            }
             if(M.checkMaitenance()){
-                TUI.clearScreen()
+                IDLE = false
+                TEST = true
+                INM = true
+                break
+            }
+            if(System.currentTimeMillis() - animationTime > ANIMATIONTIME){
+                ScoreDisplay.animation()
+                animationTime = System.currentTimeMillis()
             }
         }
+
+        handleMaitenanceInputs()
+
     }
 
     fun prepGameScreen(){
         TUI.clearScreen()
         ScoreDisplay.setScore(0, false)
-        TUI.writeCorners("[ ", top = false, left = true)
-        TUI.writeCorners("[ ", top = true, left = true)
+        TUI.writeCorners(AIMSTRING, top = false, left = true)
+        TUI.writeCorners(AIMSTRING, top = true, left = true)
         resetAim()
-        GAMERUN = true
+        startGame()
     }
 
     fun spawnInvaders(){
@@ -105,16 +162,78 @@ object app{
 
         }
         TUI.positionCursor(AIMPOS, 2)
+        SPAWNTIME -= 5
     }
 
-    fun checkGameOver(){
-        if(TOPINVADERS.length >= 14 || BOTTOMIMVADERS.length >= 14){
+    fun checkGameOver(): Boolean {
+        if(TOPINVADERS.length > 14 || BOTTOMIMVADERS.length > 14){
             GAMERUN = false
+            return true
         }
+        return false
+    }
+
+    fun handleStatsReset() {
+        while (true) {
+            when (TUI.waitAnyKey(MAITENANCEINPUTTIME)) {
+                '*' -> {
+                    CoinAcceptor.resetCoins()
+                    PREVCOINS = 0
+                    NGAMES = 0
+                    TUI.writeCorners("Jogos;$NGAMES", top = true, left = true)
+                    TUI.writeCorners("Moedas;$PREVCOINS", top = false, left = true)
+                }
+                '#' -> {
+                    handleMaitenanceInputs()
+                }
+            }
+
+            if(!M.checkMaitenance()){
+                initScreen()
+            }
+        }
+    }
+    fun handleMaitenanceInputs() {
+
+        TUI.clearScreen()
+        TUI.writeCorners("*-Testar jogo", true, true)
+        TUI.writeCorners("#-Stats 0-OFF", false, false)
+        TUI.cursorOutOfScreen()
+
+        while (INM) {
+            when (TUI.waitAnyKey(MAITENANCEINPUTTIME)) {
+                '*' -> {
+                    prepGameScreen()
+                }
+
+                '#' -> {
+                    TUI.clearScreen()
+                    PREVCOINS += CoinAcceptor.getCoins()
+                    TUI.writeCorners("NJOGOS: $NGAMES", top = true, left = true)
+                    TUI.writeCorners("MOEDAS: $PREVCOINS", top = false, left = true)
+                    TUI.cursorOutOfScreen()
+                    handleStatsReset()
+                }
+                '0' -> {
+                    Statistics.saveStatsFile(PREVCOINS, NGAMES)
+                    Scores.writeScoresToFile(Scores.getScores())
+                    System.exit(1)
+                }
+            }
+
+            if(!M.checkMaitenance()){
+                IDLE = false
+                INM = false
+                TEST = false
+                break
+            }
+        }
+
+        resetGameState()
     }
 
     fun handleNameInputs(){
-        when (val key = TUI.waitAnyKey(GAMEKEYWAITTIME)) {
+        when (TUI.waitAnyKey(GAMEKEYWAITTIME)) {
             '6' -> {
                 LETTER++
                 if(LETTER > 'Z'){
@@ -139,7 +258,8 @@ object app{
                 TUI.positionCursor(1, NAMESCREENSTRING.length + USERNAME.length + 1)
             }
             '*' -> {
-                INSERTINGNAME = false
+                if(USERNAME.isNotEmpty())
+                    INSERTINGNAME = false
             }
 
             else -> return
@@ -153,15 +273,20 @@ object app{
 
     fun getUserName(){
         INSERTINGNAME = true
-        TUI.writeCorners("             ", top = true, left = true)
+        TUI.clearLine(1)
         TUI.writeCorners(NAMESCREENSTRING, top = true, left = true)
         TUI.writeChar(LETTER)
         TUI.positionCursor(1, NAMESCREENSTRING.length + USERNAME.length + 1)
+
         while(INSERTINGNAME){
             handleNameInputs()
         }
 
-        app.initScreen()
+
+        val gamePlayed = Scores.Score(USERNAME, SCORE)
+        Scores.addScore(gamePlayed)
+        resetGameState()
+
     }
 
     fun gameOverScreen(){
@@ -169,7 +294,6 @@ object app{
         TUI.writeCorners("Score: $SCORE", top = false, left = true)
         TUI.writeCorners("GAME OVER!", top = true, left = true)
         getUserName()
-        NJOGOS += 1
     }
 
     fun handleGameInputs() {
@@ -230,26 +354,31 @@ object app{
         }
     }
 
-    fun startGame(){
+    fun startGame() {
         GAMERUN = true
         var lastSpawnTime = Time.getTimeInMillis()
 
-        while(GAMERUN){
+        while (GAMERUN) {
             handleGameInputs()
             val currTime = Time.getTimeInMillis()
-            if(currTime - lastSpawnTime > SPAWNTIME){
+            if (currTime - lastSpawnTime > SPAWNTIME) {
                 spawnInvaders()
                 lastSpawnTime = currTime
             }
-            checkGameOver()
+            if(checkGameOver())
+                break
         }
 
-        return
+        if(!TEST){
+            NGAMES += 1
+            CREDITS -= 2
+            gameOverScreen()
+        }
+
+        resetGameState()
     }
 }
 
 fun main(){
     app.init()
-    app.startGame()
-    app.gameOverScreen()
 }

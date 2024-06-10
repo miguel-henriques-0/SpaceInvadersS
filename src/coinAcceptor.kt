@@ -7,6 +7,10 @@ object CoinAcceptor{
     fun getCoins(): Int = COINS
 
     fun init(){
+        resetCoins()
+    }
+
+    fun resetCoins(){
         COINS = 0
     }
 

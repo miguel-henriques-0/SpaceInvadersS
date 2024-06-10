@@ -1,8 +1,10 @@
+import java.io.File
 import java.io.FileNotFoundException
 import java.io.FileReader
 import java.io.FileWriter
 import java.io.IOException
 import java.io.PrintWriter
+import java.util.Formatter
 import java.util.Scanner
 
 object FileAccess{
@@ -29,8 +31,25 @@ object FileAccess{
         return linesArr
     }
 
+    fun writeStringToFile(file: String, content: String) {
+        FileWriter(file).use {
+            it.write(content)
+        }
+    }
+
+    fun writeArrayToFile(filename: String, array: ArrayList<String>){
+
+        val file = File(filename)
+
+        file.printWriter().use { out ->
+            array.forEach { line -> out.println(line)}
+        }
+
+    }
+
 }
 
 fun main(args: Array<String>) {
-    FileAccess.readFile("src/scores.txt")
+    val a = arrayOf("Aaaa", "bbbb", "cccc")
+    //FileAccess.writeArrayToFile("src/scores.txt", a)
 }

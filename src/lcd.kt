@@ -123,9 +123,9 @@ object LCD { // Escreve no LCD usando a interface a 4 bits
         var data = 0
 
         // Verifica se a linha e coluna são valores válidos
-        if(line > LINES || column > COLS) {
-            return
-        }
+//        if(line > LINES || column > COLS) {
+//            return
+//        }
 
         // Caso vá ocorrer troca de linha guarda o número de caracteres escritos na linha atual
         if(line != CURSORLINE)
@@ -151,7 +151,7 @@ object LCD { // Escreve no LCD usando a interface a 4 bits
     // Envia comando para limpar o ecrã e posicionar o cursor em (0,0)
     fun clear(){
         writeCMD(CMDCLEARDISPLAY)     // Limpa display
-        writeCMD(CMDSETCURSORHOME)    // Retorna o curso a (0,0)
+        writeCMD(CMDSETCURSORHOME)    // Retorna o cursor a (0,0)
 
         // Coloca as variáveis de posição do cursor em linha = 1, coluna = 1
         CURSORLINE = 1

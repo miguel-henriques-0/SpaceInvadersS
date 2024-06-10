@@ -1,2 +1,2 @@
-Jogos: 0
-Moedas: 10
+Jogos;0
+Moedas;0
