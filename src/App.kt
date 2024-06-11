@@ -59,6 +59,7 @@ object App{
 
         PREVCOINS = Statistics.readCoins()
         NGAMES = Statistics.readNumberOfGames()
+        USERNAME = ""
         CREDITS = 0
         SCORELIST = Scores.getScores()
 
