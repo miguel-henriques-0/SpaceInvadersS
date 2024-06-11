@@ -266,6 +266,7 @@ object App{
 
         Statistics.saveStatsFile(PREVCOINS, NGAMES)
         Scores.writeScoresToFile(Scores.getScores())
+        TUI.screenOff()
         exitProcess(1)
     }
 

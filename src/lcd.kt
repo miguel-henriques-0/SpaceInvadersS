@@ -161,6 +161,10 @@ object LCD { // Escreve no LCD usando a interface a 4 bits
         PREVCURSORCOLUMN = 1
     }
 
+    fun displayOff(){
+        writeCMD(CMDLCDOFF)
+    }
+
 }
 
 fun main(){

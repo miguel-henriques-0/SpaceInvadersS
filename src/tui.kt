@@ -10,6 +10,10 @@ object TUI{
         LCD.clear()
     }
 
+    fun screenOff(){
+        LCD.displayOff()
+    }
+
     fun cursorOutOfScreen(){
         positionCursor(1, 30)
     }
