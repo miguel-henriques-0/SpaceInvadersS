@@ -16,7 +16,7 @@ object CoinAcceptor{
 
     fun checkCoin(): Boolean{
         if(HAL.isBit(CMASK)){
-            COINS += 2
+            COINS += 1
             HAL.setBits(CMASK)
             HAL.clrBits(CMASK)
             return true

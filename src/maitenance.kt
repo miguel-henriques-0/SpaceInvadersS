@@ -3,7 +3,7 @@ object M{
 
     private const val MBIT = 0x80
 
-    fun checkMaitenance(): Boolean{
+    fun checkMaintenance(): Boolean{
         if(HAL.isBit(MBIT))
             return true
         else
@@ -15,7 +15,7 @@ object M{
 fun main(args: Array<String>) {
     LCD.init()
     while(true){
-        if(M.checkMaitenance())
+        if(M.checkMaintenance())
         TUI.writeCorners("aaaaaa", true, true)
     }
 }

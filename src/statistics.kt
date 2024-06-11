@@ -3,8 +3,8 @@ import java.util.ArrayList
 object Statistics{
 
     private const val STATSFILE = "src/statistics.txt"
-    private const val GAMESSTRING = "Jogos;"
-    private const val COINSSTRING = "Moedas;"
+    const val GAMESSTRING = "Jogos;"
+    const val COINSSTRING = "Moedas;"
 
     fun readCoins(): Int{
         val fileContent = FileAccess.readFile(STATSFILE)

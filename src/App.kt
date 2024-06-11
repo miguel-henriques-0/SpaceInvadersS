@@ -1,6 +1,8 @@
 import isel.leic.utils.Time
+import kotlin.system.exitProcess
 
-object app{
+object App{
+
     // Variáveis de jogo
     private var GAMERUN: Boolean = false
     private var INSERTINGNAME = false
@@ -19,16 +21,18 @@ object app{
     // Variáveis de inimigos
     private var SPAWNTIME = 0
     private const val DEFAULTSPAWNTIME = 1000
+    private const val INCREASEDIF = 1
     private var TOPINVADERS = ""
     private var BOTTOMIMVADERS = ""
 
     // Constantes de tempo
     private const val STARTKEYWAITTIME: Long = 100
     private const val GAMEKEYWAITTIME: Long = 100
-    private const val ANIMATIONTIME = 500
+    private const val ANIMATIONTIME = 1000
     private const val IDLETIMER = 10000
     private const val PODIUMTIME = 4000
     private const val CHECKCOINTIME = 100
+    private const val GAMEOVERTIME: Long = 2000
 
     // Variáveis e constantes da introdução do username
     private const val NAMESCREENSTRING = "Nome: "
@@ -46,6 +50,7 @@ object app{
     private var IDLE = false
 
 
+    // Inicia a classe App
     fun init(){
         Scores.init()
         TUI.init()
@@ -60,7 +65,8 @@ object app{
         resetGameState()
     }
 
-    fun resetGameState(){
+    // Inicia as variáveis de jogo para começar um jogo novo
+    private fun resetGameState(){
         TOPINVADERS = ""
         BOTTOMIMVADERS = ""
         SCORE = 0
@@ -73,15 +79,17 @@ object app{
         initScreen()
     }
 
-    fun scoreUp(value: Int){
+    // Aumenta os pontos do jogador
+    private fun scoreUp(value: Int){
         SCORE += value
         ScoreDisplay.setScore(SCORE, false)
     }
 
-    fun waitGameStart(): Boolean = TUI.waitSpecificKey('#', STARTKEYWAITTIME)
+    // Espera pela tecla que dá início ao jogo
+    private fun waitGameStart(): Boolean = TUI.waitSpecificKey('#', STARTKEYWAITTIME)
 
-
-    fun initScreen(){
+    // Trata dos inputs do ecrã inicial
+    private fun initScreen(){
 
         var animationTime = System.currentTimeMillis()
         var idleTime = System.currentTimeMillis()
@@ -120,7 +128,7 @@ object app{
                 scoreTimer = System.currentTimeMillis()
 
             }
-            if(M.checkMaitenance()){
+            if(M.checkMaintenance()){
                 IDLE = false
                 TEST = true
                 INM = true
@@ -132,11 +140,12 @@ object app{
             }
         }
 
-        handleMaitenanceInputs()
+        handleMaintenanceInputs()
 
     }
 
-    fun prepGameScreen(){
+    // Prepara o ecrã para o jogo
+    private fun prepGameScreen(){
         TUI.clearScreen()
         ScoreDisplay.setScore(0, false)
         TUI.writeCorners(AIMSTRING, top = false, left = true)
@@ -145,7 +154,8 @@ object app{
         startGame()
     }
 
-    fun spawnInvaders(){
+    // Insere invasores de forma aleatória numa das linhas
+    private fun spawnInvaders(){
 
         val row = (0..1).random()
         val invader = (0..9).random().toString()
@@ -162,10 +172,10 @@ object app{
 
         }
         TUI.positionCursor(AIMPOS, 2)
-        SPAWNTIME -= 5
     }
 
-    fun checkGameOver(): Boolean {
+    // Verifica se o jogador perdeu o jogo
+    private fun checkGameOver(): Boolean {
         if(TOPINVADERS.length > 14 || BOTTOMIMVADERS.length > 14){
             GAMERUN = false
             return true
@@ -173,31 +183,34 @@ object app{
         return false
     }
 
-    fun handleStatsReset() {
+    // Verifica se o utilizador pretende colocar as estatísticas a zero, voltar para o menu de manutenção ou o inicial
+    private fun handleStatsReset() {
         while (true) {
             when (TUI.waitAnyKey(MAITENANCEINPUTTIME)) {
                 '*' -> {
                     CoinAcceptor.resetCoins()
                     PREVCOINS = 0
                     NGAMES = 0
-                    TUI.writeCorners("Jogos;$NGAMES", top = true, left = true)
-                    TUI.writeCorners("Moedas;$PREVCOINS", top = false, left = true)
+                    TUI.writeCorners(Statistics.GAMESSTRING + NGAMES, top = true, left = true)
+                    TUI.writeCorners(Statistics.COINSSTRING + PREVCOINS, top = false, left = true)
                 }
                 '#' -> {
-                    handleMaitenanceInputs()
+                    handleMaintenanceInputs()
                 }
             }
 
-            if(!M.checkMaitenance()){
+            if(!M.checkMaintenance()){
                 initScreen()
             }
         }
     }
-    fun handleMaitenanceInputs() {
+
+    // Verifica os inputs no menu de manutenção
+    private fun handleMaintenanceInputs() {
 
         TUI.clearScreen()
-        TUI.writeCorners("*-Testar jogo", true, true)
-        TUI.writeCorners("#-Stats 0-OFF", false, false)
+        TUI.writeCorners("*-Testar jogo", top = true, left = true)
+        TUI.writeCorners("#-Stats 0-OFF", top = false, left = false)
         TUI.cursorOutOfScreen()
 
         while (INM) {
@@ -208,20 +221,18 @@ object app{
 
                 '#' -> {
                     TUI.clearScreen()
-                    PREVCOINS += CoinAcceptor.getCoins()
+                    PREVCOINS = CoinAcceptor.getCoins()
                     TUI.writeCorners("NJOGOS: $NGAMES", top = true, left = true)
                     TUI.writeCorners("MOEDAS: $PREVCOINS", top = false, left = true)
                     TUI.cursorOutOfScreen()
                     handleStatsReset()
                 }
                 '0' -> {
-                    Statistics.saveStatsFile(PREVCOINS, NGAMES)
-                    Scores.writeScoresToFile(Scores.getScores())
-                    System.exit(1)
+                    confirmSystemShutdown()
                 }
             }
 
-            if(!M.checkMaitenance()){
+            if(!M.checkMaintenance()){
                 IDLE = false
                 INM = false
                 TEST = false
@@ -232,7 +243,35 @@ object app{
         resetGameState()
     }
 
-    fun handleNameInputs(){
+    // Confirma com o utilizador o encerramento do sistema
+    // Em caso positivo guarda os scores e estatísticas nos ficheiros respetivos
+    private fun confirmSystemShutdown(){
+
+        TUI.clearScreen()
+        TUI.writeCorners("Desligar sistema?", top = true, left = true)
+        TUI.writeCorners("0 - Sim  * - Nao", top = false, left = false)
+        TUI.cursorOutOfScreen()
+
+        while(true) {
+            when (TUI.waitAnyKey(MAITENANCEINPUTTIME)) {
+                '0' -> {
+                    break
+                }
+
+                '*' -> {
+                    handleMaintenanceInputs()
+                }
+            }
+        }
+
+        Statistics.saveStatsFile(PREVCOINS, NGAMES)
+        Scores.writeScoresToFile(Scores.getScores())
+        exitProcess(1)
+    }
+
+
+    // Inputs de introdução do nome de utilizador após o jogo
+    private fun handleNameInputs(){
         when (TUI.waitAnyKey(GAMEKEYWAITTIME)) {
             '6' -> {
                 LETTER++
@@ -271,7 +310,8 @@ object app{
 
     }
 
-    fun getUserName(){
+    // Prepara o menu de introdução do nome de utilizador
+    private fun getUserName(){
         INSERTINGNAME = true
         TUI.clearLine(1)
         TUI.writeCorners(NAMESCREENSTRING, top = true, left = true)
@@ -289,14 +329,17 @@ object app{
 
     }
 
-    fun gameOverScreen(){
+    // Prepara o ecrã de fim de jogo
+    private fun gameOverScreen(){
         TUI.clearScreen()
         TUI.writeCorners("Score: $SCORE", top = false, left = true)
         TUI.writeCorners("GAME OVER!", top = true, left = true)
+        Thread.sleep(GAMEOVERTIME)
         getUserName()
     }
 
-    fun handleGameInputs() {
+    // Inputs durante o jogo
+    private fun handleGameInputs() {
 
         when (val key = TUI.waitAnyKey(GAMEKEYWAITTIME)) {
             '*' -> {
@@ -314,7 +357,7 @@ object app{
 
             '#' -> {processAim()}
 
-            '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', -> {
+            '0', '1', '2', '3', '4', '5', '6', '7', '8', '9' -> {
                 TUI.writeChar(key)
                 TUI.positionCursor(AIMPOS, 2)
                 AIMVALUE = key
@@ -324,15 +367,16 @@ object app{
 
     }
 
-
-    fun resetAim(){
+    // Coloca a mira na posição correta
+    private fun resetAim(){
         TUI.positionCursor(AIMPOS, 2)
         TUI.writeChar(' ')
         TUI.positionCursor(AIMPOS, 2)
         AIMVALUE = null
     }
 
-    fun processAim() {
+    // Verifica se os invasores são abatidos
+    private fun processAim() {
         when (AIMPOS) {
             1 -> {
                 if (TOPINVADERS.isNotEmpty() && TOPINVADERS[0] == AIMVALUE) {
@@ -340,6 +384,7 @@ object app{
                     TUI.writeCorners(" $TOPINVADERS", top = true, left = false)
                     scoreUp(POINTSPERKILL)
                     resetAim()
+                    SPAWNTIME -= INCREASEDIF
                 }
             }
 
@@ -349,12 +394,14 @@ object app{
                     TUI.writeCorners(" $BOTTOMIMVADERS", top = false, left = false)
                     scoreUp(POINTSPERKILL)
                     resetAim()
+                    SPAWNTIME -= INCREASEDIF
                 }
             }
         }
     }
 
-    fun startGame() {
+    // Inicia o jogo
+    private fun startGame() {
         GAMERUN = true
         var lastSpawnTime = Time.getTimeInMillis()
 
@@ -380,5 +427,5 @@ object app{
 }
 
 fun main(){
-    app.init()
+    App.init()
 }
