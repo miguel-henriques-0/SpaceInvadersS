@@ -337,6 +337,7 @@ object App{
         TUI.clearScreen()
         TUI.writeCorners("Score: $SCORE", top = false, left = true)
         TUI.writeCorners("GAME OVER!", top = true, left = true)
+        TUI.cursorOutOfScreen()
         Thread.sleep(GAMEOVERTIME)
         getUserName()
     }
