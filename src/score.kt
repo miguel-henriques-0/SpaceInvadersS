@@ -31,7 +31,7 @@ object Scores{
         }
 
         for (i in 0..< scores.size) {
-            if (compareScores(scores[i], newScore) < 0){
+            if (compareScores(scores[i], newScore) <= 0){
                 scores.add(i, newScore)
 
                 if(scores.size > NUMBERSCORES){
