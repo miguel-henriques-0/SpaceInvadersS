@@ -70,6 +70,7 @@ object App{
     private fun resetGameState(){
         TOPINVADERS = ""
         BOTTOMIMVADERS = ""
+        USERNAME = ""
         SCORE = 0
         AIMPOS = 1
         AIMVALUE = null
