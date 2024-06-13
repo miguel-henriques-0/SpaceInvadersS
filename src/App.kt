@@ -29,8 +29,8 @@ object App{
     private var BOTTOMIMVADERS = ""
 
     // Constantes de tempo
-    private const val STARTKEYWAITTIME: Long = 100
-    private const val GAMEKEYWAITTIME: Long = 100
+    private const val STARTKEYWAITTIME: Long = 50
+    private const val GAMEKEYWAITTIME: Long = 50
     private const val ANIMATIONTIME = 500
     private const val IDLETIMER = 10000
     private const val PODIUMTIME = 4000
@@ -141,6 +141,7 @@ object App{
             if(CoinAcceptor.checkCoin() && System.currentTimeMillis() - idleTime > CHECKCOINTIME){
                 IDLE = false
                 idleTime = System.currentTimeMillis()
+                PREVCOINS += 1
                 CREDITS += 2
                 TUI.clearLine(LCDBOTTOMLINE)
                 TUI.writeCorners("$CREDITSSTRING$CREDITS$", top = false, left = false)
@@ -226,6 +227,7 @@ object App{
     }
 
     private fun writeStatisticsToScreen(){
+        TUI.clearScreen()
         TUI.writeCorners(NGAMESSTRING + NGAMES, top = true, left = true)
         TUI.writeCorners(NCOINSSTRING + PREVCOINS, top = false, left = true)
         TUI.cursorOutOfScreen()
@@ -269,8 +271,6 @@ object App{
                 }
 
                 BSTATISTICS -> {
-                    TUI.clearScreen()
-                    PREVCOINS = CoinAcceptor.getCoins()
                     writeStatisticsToScreen()
                     handleStatsReset()
                 }
@@ -321,7 +321,7 @@ object App{
     private fun handleNameInputs(){
         when (TUI.waitAnyKey(GAMEKEYWAITTIME)) {
             BCYCLELETTERUP -> {
-                if(LETTER > 'Z' || LETTER == ' '){
+                if(LETTER >= 'Z' || LETTER == ' '){
                     LETTER = 'A'-1
                 }
                 LETTER++
@@ -329,7 +329,7 @@ object App{
                 TUI.positionCursor(LCDTOPLINE, NAMESCREENSTRING.length + USERNAME.length + 1)
             }
             BCYCLELETTERDOWN -> {
-                if(LETTER < 'A'){
+                if(LETTER <= 'A'){
                     LETTER = 'Z'+1
                 }
                 LETTER--
@@ -341,7 +341,7 @@ object App{
                     USERNAME = USERNAME.dropLast(1)
                     TUI.positionCursor(LCDTOPLINE, NAMESCREENSTRING.length + USERNAME.length + 1)
                     LETTER = ' '
-                    TUI.writeChar(LETTER)
+                    TUI.writeString("  ")
                     TUI.positionCursor(LCDTOPLINE, NAMESCREENSTRING.length + USERNAME.length + 1)
                 }
             }

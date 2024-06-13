@@ -35,6 +35,10 @@ object TUI{
         LCD.write(char)
     }
 
+    fun writeString(str: String){
+        LCD.write(str)
+    }
+
     fun waitAnyKey(time: Long): Char {
         return KBD.waitKey(time)
     }
