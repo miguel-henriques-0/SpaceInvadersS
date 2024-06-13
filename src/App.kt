@@ -13,6 +13,8 @@ object App{
     private const val POINTSPERKILL = 2
     private var PREVCOINS = 0
     private var CREDITS = 0
+    private const val CREDITSTOPLAY = 1
+    private const val CREDITSPERCOIN = 2
     private var NGAMES = 0
 
     // Variáveis de mira
@@ -134,7 +136,7 @@ object App{
         var animationIndex = 0
 
         while(true){
-            if(waitGameStart() && CREDITS >= 2){
+            if(waitGameStart() && CREDITS >= CREDITSTOPLAY){
                 prepGameScreen()
                 break
             }
@@ -142,7 +144,7 @@ object App{
                 IDLE = false
                 idleTime = System.currentTimeMillis()
                 PREVCOINS += 1
-                CREDITS += 2
+                CREDITS += CREDITSPERCOIN
                 TUI.clearLine(LCDBOTTOMLINE)
                 TUI.writeCorners("$CREDITSSTRING$CREDITS$", top = false, left = false)
             }
@@ -477,7 +479,7 @@ object App{
 
         if(!TEST){
             NGAMES += 1
-            CREDITS -= 2
+            CREDITS -= 1
             gameOverScreen()
         }
 
