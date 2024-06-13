@@ -1,5 +1,3 @@
-import java.io.File
-
 object Scores{
 
     private const val SCOREFILE = "src/scores.txt"
