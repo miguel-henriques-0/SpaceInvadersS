@@ -1,6 +1,8 @@
 
 object ScoreDisplay { // Controla o mostrador de pontuação.
 
+    const val ANIMATIONFRAMES = 5
+
     // Inicia a classe, estabelecendo os valores iniciais.
     fun init(){
         SerialEmitter.init()
@@ -22,19 +24,16 @@ object ScoreDisplay { // Controla o mostrador de pontuação.
     private fun updateScoreDisplay() = sendByte(96)
 
     // Animação para quando o Score Display não estã a ser usado
-    fun animation(){
-        setScore(111111, false)
-        //Thread.sleep(300)
-        setScore(0xEEEEE, true)
-        //Thread.sleep(300)
-        setScore(0xDDDDDD, true)
-        //Thread.sleep(300)
-        setScore(0xCCCCCC, true)
-        //Thread.sleep(300)
-        setScore(0xBBBBBB, true)
-        //Thread.sleep(300)
-        setScore(0xAAAAAA, true)
-        //Thread.sleep(300)
+    fun animation(frame: Int){
+        when(frame){
+            0 -> setScore(111111, false)
+            1 -> setScore(0xEEEEE, true)
+            2 -> setScore(0xDDDDDD, true)
+            3 -> setScore(0xCCCCCC, true)
+            4 -> setScore(0xBBBBBB, true)
+            5 -> setScore(0xAAAAAA, true)
+            else -> return
+        }
     }
 
     // Envia comando para atualizar o valor do mostrador de pontuação
@@ -75,7 +74,18 @@ object ScoreDisplay { // Controla o mostrador de pontuação.
 
 fun main(){
     ScoreDisplay.init()
+    var time = System.currentTimeMillis()
+    var animationIndex = 0
+
     while(true){
-        ScoreDisplay.animation()
+        if(System.currentTimeMillis() - time > 200) {
+            ScoreDisplay.animation(animationIndex)
+            time = System.currentTimeMillis()
+            animationIndex++
+            if(animationIndex > ScoreDisplay.ANIMATIONFRAMES){
+                animationIndex = 0
+            }
+        }
+
     }
 }

@@ -3,6 +3,8 @@ import kotlin.system.exitProcess
 
 object App{
 
+/******************************* Variáveis e constantes globais *******************************/
+
     // Variáveis de jogo
     private var GAMERUN: Boolean = false
     private var INSERTINGNAME = false
@@ -15,6 +17,7 @@ object App{
 
     // Variáveis de mira
     private var AIMPOS = 1
+    private const val INITAIMCOL = 2
     private var AIMVALUE: Char? = null
     private const val AIMSTRING = "[ "
 
@@ -28,7 +31,7 @@ object App{
     // Constantes de tempo
     private const val STARTKEYWAITTIME: Long = 100
     private const val GAMEKEYWAITTIME: Long = 100
-    private const val ANIMATIONTIME = 1000
+    private const val ANIMATIONTIME = 500
     private const val IDLETIMER = 10000
     private const val PODIUMTIME = 4000
     private const val CHECKCOINTIME = 100
@@ -36,18 +39,49 @@ object App{
 
     // Variáveis e constantes da introdução do username
     private const val NAMESCREENSTRING = "Nome: "
-    private var LETTER = 'A'
+    private var LETTER = ' '
     private var USERNAME = ""
+    private const val USERNAMEMAXSIZE = 8
 
     // Variáveis manutenção
     private var TEST = false
     private var INM = false
     private const val MAITENANCEINPUTTIME: Long = 200
 
+    // Variáveis de estatíticas
+    private const val NGAMESSTRING = "Jogos: "
+    private const val NCOINSSTRING = "Moedas: "
+
     // Variáveis ecrã principal
     private const val GAMETITLE = "Space Invaders"
     private var CREDITSSTRING = "Creditos "
     private var IDLE = false
+
+    // Linhas do LCD
+    private const val LCDTOPLINE = 1
+    private const val LCDBOTTOMLINE = 2
+
+/******************************* Teclas *******************************/
+
+    // Teclas Jogo
+    private const val BGAMESTART = '#'
+    private const val BSHOOT = '#'
+    private const val BCHANGEAIM = '*'
+
+    // Teclas introdução do nome
+    private const val BCYCLELETTERUP = '2'
+    private const val BCYCLELETTERDOWN = '8'
+    private const val BERASELETTER = '4'
+    private const val BCONFIRMLETTER = '#'
+    private const val BCONFIRMNAME = '*'
+
+    // Teclas manutenção
+    private const val BSYSTEMOFF = '0'
+    private const val BCONFIRMSYSOFF = '0'
+    private const val BDENYSYSOFF = '*'
+    private const val BSTATISTICS = '#'
+    private const val BRESETSTATISTICS = '*'
+    private const val BTESTGAME = '*'
 
 
     // Inicia a classe App
@@ -88,7 +122,7 @@ object App{
     }
 
     // Espera pela tecla que dá início ao jogo
-    private fun waitGameStart(): Boolean = TUI.waitSpecificKey('#', STARTKEYWAITTIME)
+    private fun waitGameStart(): Boolean = TUI.waitSpecificKey(BGAMESTART, STARTKEYWAITTIME)
 
     // Trata dos inputs do ecrã inicial
     private fun initScreen(){
@@ -97,6 +131,7 @@ object App{
         var idleTime = System.currentTimeMillis()
         var scoreTimer = System.currentTimeMillis()
         var scoreIndex = 0
+        var animationIndex = 0
 
         while(true){
             if(waitGameStart() && CREDITS >= 2){
@@ -107,7 +142,7 @@ object App{
                 IDLE = false
                 idleTime = System.currentTimeMillis()
                 CREDITS += 2
-                TUI.clearLine(2)
+                TUI.clearLine(LCDBOTTOMLINE)
                 TUI.writeCorners("$CREDITSSTRING$CREDITS$", top = false, left = false)
             }
             if(System.currentTimeMillis() - idleTime > IDLETIMER){
@@ -115,11 +150,12 @@ object App{
             }
             if(IDLE && System.currentTimeMillis() - scoreTimer > PODIUMTIME && SCORELIST.isNotEmpty()){
 
-                TUI.clearLine(2)
+                TUI.clearLine(LCDBOTTOMLINE)
 
                 val score = SCORELIST[scoreIndex]
 
-                TUI.writeCorners("${scoreIndex+1}. ${score.name} ${score.points}", top = false, left = true)
+                TUI.writeCorners("${scoreIndex+1}.${score.name}", top = false, left = true)
+                TUI.writeCorners( "${score.points}", top = false, left = false)
                 TUI.cursorOutOfScreen()
 
                 scoreIndex++
@@ -137,8 +173,12 @@ object App{
                 break
             }
             if(System.currentTimeMillis() - animationTime > ANIMATIONTIME){
-                ScoreDisplay.animation()
+                ScoreDisplay.animation(animationIndex)
                 animationTime = System.currentTimeMillis()
+                animationIndex++
+                if(animationIndex > ScoreDisplay.ANIMATIONFRAMES){
+                    animationIndex = 0
+                }
             }
         }
 
@@ -173,7 +213,7 @@ object App{
             }
 
         }
-        TUI.positionCursor(AIMPOS, 2)
+        TUI.positionCursor(AIMPOS, INITAIMCOL)
     }
 
     // Verifica se o jogador perdeu o jogo
@@ -185,24 +225,31 @@ object App{
         return false
     }
 
+    private fun writeStatisticsToScreen(){
+        TUI.writeCorners(NGAMESSTRING + NGAMES, top = true, left = true)
+        TUI.writeCorners(NCOINSSTRING + PREVCOINS, top = false, left = true)
+        TUI.cursorOutOfScreen()
+    }
+
     // Verifica se o utilizador pretende colocar as estatísticas a zero, voltar para o menu de manutenção ou o inicial
     private fun handleStatsReset() {
         while (true) {
             when (TUI.waitAnyKey(MAITENANCEINPUTTIME)) {
-                '*' -> {
+                BRESETSTATISTICS -> {
                     CoinAcceptor.resetCoins()
                     PREVCOINS = 0
                     NGAMES = 0
-                    TUI.writeCorners(Statistics.GAMESSTRING + NGAMES, top = true, left = true)
-                    TUI.writeCorners(Statistics.COINSSTRING + PREVCOINS, top = false, left = true)
+                    writeStatisticsToScreen()
+
                 }
-                '#' -> {
+                BSTATISTICS -> {
                     handleMaintenanceInputs()
                 }
             }
 
             if(!M.checkMaintenance()){
-                initScreen()
+                TEST = false
+                resetGameState()
             }
         }
     }
@@ -211,25 +258,23 @@ object App{
     private fun handleMaintenanceInputs() {
 
         TUI.clearScreen()
-        TUI.writeCorners("*-Testar jogo", top = true, left = true)
-        TUI.writeCorners("#-Stats 0-OFF", top = false, left = false)
+        TUI.writeCorners("$BTESTGAME-Testar jogo", top = true, left = true)
+        TUI.writeCorners("$BSTATISTICS-Stats $BSYSTEMOFF-OFF", top = false, left = false)
         TUI.cursorOutOfScreen()
 
         while (INM) {
             when (TUI.waitAnyKey(MAITENANCEINPUTTIME)) {
-                '*' -> {
+                BTESTGAME -> {
                     prepGameScreen()
                 }
 
-                '#' -> {
+                BSTATISTICS -> {
                     TUI.clearScreen()
                     PREVCOINS = CoinAcceptor.getCoins()
-                    TUI.writeCorners("NJOGOS: $NGAMES", top = true, left = true)
-                    TUI.writeCorners("MOEDAS: $PREVCOINS", top = false, left = true)
-                    TUI.cursorOutOfScreen()
+                    writeStatisticsToScreen()
                     handleStatsReset()
                 }
-                '0' -> {
+                BSYSTEMOFF -> {
                     confirmSystemShutdown()
                 }
             }
@@ -251,16 +296,16 @@ object App{
 
         TUI.clearScreen()
         TUI.writeCorners("Desligar sistema?", top = true, left = true)
-        TUI.writeCorners("0 - Sim  * - Nao", top = false, left = false)
+        TUI.writeCorners("$BCONFIRMSYSOFF - Sim  $BDENYSYSOFF - Nao", top = false, left = false)
         TUI.cursorOutOfScreen()
 
         while(true) {
             when (TUI.waitAnyKey(MAITENANCEINPUTTIME)) {
-                '0' -> {
+                BCONFIRMSYSOFF -> {
                     break
                 }
 
-                '*' -> {
+                BDENYSYSOFF -> {
                     handleMaintenanceInputs()
                 }
             }
@@ -272,34 +317,44 @@ object App{
         exitProcess(1)
     }
 
-
     // Inputs de introdução do nome de utilizador após o jogo
     private fun handleNameInputs(){
         when (TUI.waitAnyKey(GAMEKEYWAITTIME)) {
-            '6' -> {
+            BCYCLELETTERUP -> {
+                if(LETTER > 'Z' || LETTER == ' '){
+                    LETTER = 'A'-1
+                }
                 LETTER++
-                if(LETTER > 'Z'){
-                    LETTER = 'A'
-                }
                 TUI.writeChar(LETTER)
-                TUI.positionCursor(1, NAMESCREENSTRING.length + USERNAME.length + 1)
+                TUI.positionCursor(LCDTOPLINE, NAMESCREENSTRING.length + USERNAME.length + 1)
             }
-            '4' -> {
-                LETTER--
+            BCYCLELETTERDOWN -> {
                 if(LETTER < 'A'){
-                    LETTER = 'Z'
+                    LETTER = 'Z'+1
                 }
+                LETTER--
                 TUI.writeChar(LETTER)
-                TUI.positionCursor(1, NAMESCREENSTRING.length + USERNAME.length + 1)
+                TUI.positionCursor(LCDTOPLINE, NAMESCREENSTRING.length + USERNAME.length + 1)
             }
-            '#' -> {
-                USERNAME += LETTER
-                TUI.positionCursor(1, NAMESCREENSTRING.length + USERNAME.length + 1)
-                LETTER = 'A'
-                TUI.writeChar(LETTER)
-                TUI.positionCursor(1, NAMESCREENSTRING.length + USERNAME.length + 1)
+            BERASELETTER -> {
+                if(USERNAME.isNotEmpty()) {
+                    USERNAME = USERNAME.dropLast(1)
+                    TUI.positionCursor(LCDTOPLINE, NAMESCREENSTRING.length + USERNAME.length + 1)
+                    LETTER = ' '
+                    TUI.writeChar(LETTER)
+                    TUI.positionCursor(LCDTOPLINE, NAMESCREENSTRING.length + USERNAME.length + 1)
+                }
             }
-            '*' -> {
+            BCONFIRMLETTER -> {
+                if(LETTER in 'A'..'Z'){
+                    USERNAME += LETTER
+                    TUI.positionCursor(LCDTOPLINE, NAMESCREENSTRING.length + USERNAME.length + 1)
+                    LETTER = ' '
+                    TUI.writeChar(LETTER)
+                    TUI.positionCursor(LCDTOPLINE, NAMESCREENSTRING.length + USERNAME.length + 1)
+                }
+            }
+            BCONFIRMNAME -> {
                 if(USERNAME.isNotEmpty())
                     INSERTINGNAME = false
             }
@@ -307,7 +362,7 @@ object App{
             else -> return
         }
 
-        if(USERNAME.length == 8){
+        if(USERNAME.length == USERNAMEMAXSIZE){
             INSERTINGNAME = false
         }
 
@@ -316,10 +371,10 @@ object App{
     // Prepara o menu de introdução do nome de utilizador
     private fun getUserName(){
         INSERTINGNAME = true
-        TUI.clearLine(1)
+        TUI.clearLine(LCDTOPLINE)
         TUI.writeCorners(NAMESCREENSTRING, top = true, left = true)
         TUI.writeChar(LETTER)
-        TUI.positionCursor(1, NAMESCREENSTRING.length + USERNAME.length + 1)
+        TUI.positionCursor(LCDTOPLINE, NAMESCREENSTRING.length + USERNAME.length + 1)
 
         while(INSERTINGNAME){
             handleNameInputs()
@@ -346,24 +401,24 @@ object App{
     private fun handleGameInputs() {
 
         when (val key = TUI.waitAnyKey(GAMEKEYWAITTIME)) {
-            '*' -> {
-                if (LCD.getCursorLine() == 1) {
-                    TUI.positionCursor(2,2)
-                    AIMPOS = 2
+            BCHANGEAIM -> {
+                if (LCD.getCursorLine() == LCDTOPLINE) {
                     resetAim()
+                    TUI.positionCursor(LCDBOTTOMLINE, INITAIMCOL)
+                    AIMPOS = LCDBOTTOMLINE
                 }
-                else if (LCD.getCursorLine() == 2) {
-                    TUI.positionCursor(1, 2)
-                    AIMPOS = 1
+                else if (LCD.getCursorLine() == LCDBOTTOMLINE) {
                     resetAim()
+                    TUI.positionCursor(LCDTOPLINE, INITAIMCOL)
+                    AIMPOS = LCDTOPLINE
                 }
             }
 
-            '#' -> {processAim()}
+            BSHOOT -> {processAim()}
 
             '0', '1', '2', '3', '4', '5', '6', '7', '8', '9' -> {
                 TUI.writeChar(key)
-                TUI.positionCursor(AIMPOS, 2)
+                TUI.positionCursor(AIMPOS, INITAIMCOL)
                 AIMVALUE = key
             }
             else -> return
@@ -373,9 +428,9 @@ object App{
 
     // Coloca a mira na posição correta
     private fun resetAim(){
-        TUI.positionCursor(AIMPOS, 2)
+        TUI.positionCursor(AIMPOS, INITAIMCOL)
         TUI.writeChar(' ')
-        TUI.positionCursor(AIMPOS, 2)
+        TUI.positionCursor(AIMPOS, INITAIMCOL)
         AIMVALUE = null
     }
 
